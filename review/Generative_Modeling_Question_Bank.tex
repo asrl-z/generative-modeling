@@ -1,0 +1,373 @@
+% !TEX program = xelatex
+% Compile twice with XeLaTeX. This is a self-contained, questions-only source.
+% Sources: 2024 midterm (pp. 1--3), 2025 midterm (pp. 1--4), Assignments 1--5.
+% Paper-reading questions, the 2025 answer appendix and all submitted solutions are excluded.
+\documentclass[12pt,a4paper]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage[UTF8,fontset=fandol]{ctex}
+\usepackage{amsmath,amssymb,bm}
+\usepackage{enumitem,needspace,booktabs}
+\usepackage[hidelinks,unicode]{hyperref}
+\hypersetup{pdftitle={Generative Modeling Question Bank},pdfauthor={},pdfsubject={2024--2025 midterms and Assignments 1--5; questions only}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\clubpenalty=10000
+\widowpenalty=10000
+\setlist[enumerate,1]{label=(\alph*),leftmargin=2em,itemsep=5pt,topsep=5pt}
+\setlist[enumerate,2]{label=(\roman*),leftmargin=2em,itemsep=5pt,topsep=5pt}
+\setlist[itemize]{leftmargin=1.5em,itemsep=5pt,topsep=5pt}
+\renewcommand{\contentsname}{Contents / 知识点目录}
+\setcounter{tocdepth}{1}
+\pagestyle{plain}
+\raggedbottom
+\newcounter{problem}
+\newcommand{\problem}[4]{%
+  \par\addvspace{15pt}\Needspace{7\baselineskip}%
+  \refstepcounter{problem}\label{#1}%
+  {\large\bfseries Problem \theproblem: #2\if\relax\detokenize{#4}\relax\else\space\textit{(#4 points)}\fi\par}%
+  \nopagebreak{\small\textit{Source: #3}\par}\nopagebreak\smallskip}
+\newcommand{\topic}[1]{\clearpage\section{#1}}
+\newcommand{\E}{\mathbb E}
+\newcommand{\R}{\mathbb R}
+\newcommand{\N}{\mathcal N}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\JSD}{\operatorname{JSD}}
+\newcommand{\points}[1]{\textit{(#1 points)}\ }
+\renewcommand{\theequation}{A4.\arabic{equation}}
+\newcommand{\layerbatch}{\left[\left[\begin{bmatrix}2\\1\end{bmatrix},\begin{bmatrix}0\\2\end{bmatrix},\begin{bmatrix}2\\0\end{bmatrix},\begin{bmatrix}4\\1\end{bmatrix}\right]\right]}
+
+\begin{document}
+\begin{center}
+  {\LARGE Generative Modeling Question Bank\par}
+  \vspace{9pt}
+  {\large 2024--2025 Midterm Exams and Assignments 1--5\par}
+  \vspace{6pt}
+  {\large 按知识点分类题库\par}
+\end{center}
+\vspace{4pt}
+{\small
+本题库收录两年试卷的正式题目及五份作业中的非 Paper Reading 题目，共 40 题，保留原题语言、分值和来源编号；重复题分别列出。原题已给出的定义、公式和待证结论予以保留，不附答案、证明或解题提示。题号重新连续编排，题间引用已相应调整；各题符号以本题及注明的共享题设为准。
+}
+\begingroup
+\small
+\tableofcontents
+\endgroup
+\vspace{6pt}
+\hrule
+\vspace{7pt}
+\textbf{Formulas supplied in the original exams}
+\begin{itemize}
+\item \textbf{Gaussian distribution} (2024 and 2025). The probability density function of the multivariate Gaussian distribution $\N(\mu,\Sigma)$ is
+\[
+ f(x)=\frac{1}{(2\pi)^{d/2}|\Sigma|^{1/2}}
+ \exp\!\left[-\frac12(x-\mu)^\top\Sigma^{-1}(x-\mu)\right],
+\]
+where $\mu\in\R^d$ is the mean vector and $\Sigma\in\R^{d\times d}$ is the covariance matrix.
+\item \textbf{$f$-divergence} (2024). Let $f:[0,+\infty)\to\R$ be a continuous convex function satisfying $f(1)=0$. For continuous probability density functions $p(x)$ and $q(x)$,
+\[
+ D_f(p\|q)=\int q(x)f\!\left(\frac{p(x)}{q(x)}\right)\,dx.
+\]
+\end{itemize}
+
+\topic{AR and Transformers / 自回归与 Transformer}
+
+\problem{e24-1a}{RNN and Transformer complexity}{2024 Midterm, Problem 1(a)}{5}
+RNN and Transformer are the most popular architectures in language modeling. Given a sequence of length $n$, during training, what is the order of computation complexity of Transformers and RNN with respect to $n$? Which one is more training-efficient? During inference, what is the order of computation complexity of the transformer and RNN with respect to $n$? Which one is more inference-efficient?
+
+\problem{e24-1c}{Self-attention}{2024 Midterm, Problem 1(c)}{5}
+Given the sequence of queries $\bm q_1,\ldots,\bm q_n\in\R^d$, keys $\bm k_1,\ldots,\bm k_n\in\R^d$, and values $\bm v_1,\ldots,\bm v_n\in\R^d$, describe how the self-attention mechanism works on those queries, keys, and values.
+
+\problem{e25-1b}{Self-attention and complexity}{2025 Midterm, Problem 1(b)}{5}
+Suppose the sequence length is $n$ and the hidden dimension is $d$. Write down the calculation of a self-attention layer and discuss the computational complexity in terms of $n$ and $d$.
+
+\problem{a2-2}{Self-attention and computational complexity}{Assignment 2, Question 2}{}
+Let $X\in\R^{n\times d}$ be a sequence of $n$ token representations. Consider a single-head self-attention layer with projection matrices $W_Q,W_K,W_V\in\R^{d\times d}$. Ignore biases and the output projection.
+\begin{enumerate}
+\item Write down the computation of $Q,K,V$ and the scaled dot-product attention output. Specify the dimension of each intermediate matrix and the axis along which softmax is applied.
+\item Analyze the time complexity in terms of $n$ and $d$, distinguishing the projections from the attention computation. What is the memory complexity of explicitly storing the attention matrix?
+\end{enumerate}
+
+\problem{a2-1}{Causal masking}{Assignment 2, Question 1}{}
+In an autoregressive language model, position $i$ uses tokens $x_1,\ldots,x_i$ to predict $x_{i+1}$. Consider the unmasked attention operation
+\[
+ \operatorname{Attention}(Q,K,V)=\operatorname{softmax}\!\left(\frac{QK^\top}{\sqrt d}\right)V,
+ \qquad Q,K,V\in\R^{n\times d},
+\]
+where softmax is applied row-wise.
+\begin{enumerate}
+\item Explain why unmasked attention operation fails in autoregressive modeling.
+\item Explain how the causal mask is applied and why it prevents attention to future tokens.
+\end{enumerate}
+
+\problem{e24-1b}{Positional embeddings}{2024 Midterm, Problem 1(b)}{5}
+Briefly explain why the transformer model needs positional embeddings to process a sequence.
+
+\problem{e25-1a}{Positional and time embeddings}{2025 Midterm, Problem 1(a)}{5}
+Positional embedding is used in Transformers, while time embedding is used in diffusion models. Please explain their roles and provide a representative implementation for each.
+
+\problem{a2-3}{Rotary position embedding (RoPE)}{Assignment 2, Question 3}{}
+Consider the standard, unscaled RoPE implementation with head dimension $d=2h$ and a fixed base $b>1$ (e.g., $b=10000$). Let $\theta=(b^{-2\ell/d})_{\ell=0}^{h-1}\in\R^h$. For one token at position $t$, split $x\in\R^d$ into its first and second halves $x^{(1)},x^{(2)}\in\R^h$ and define
+\[
+ x=\begin{bmatrix}x^{(1)}\\x^{(2)}\end{bmatrix},\qquad
+ \operatorname{rotate\_half}(x)=\begin{bmatrix}-x^{(2)}\\x^{(1)}\end{bmatrix},\qquad
+ e_t=\begin{bmatrix}t\theta\\t\theta\end{bmatrix}.
+\]
+The implementation applies RoPE to queries and keys using
+\[
+ f(x,t)=x\odot\cos(e_t)+\operatorname{rotate\_half}(x)\odot\sin(e_t),
+\]
+where $\odot$ denotes elementwise multiplication and sine and cosine are applied elementwise. For arbitrary query and key vectors $q_i,k_j\in\R^d$ at positions $i$ and $j$, prove in exact arithmetic that
+\[
+ f(q_i,i)^\top f(k_j,j)=q_i^\top M(i-j)k_j,
+\]
+where $M(\delta)\in\R^{d\times d}$ is independent of $q_i,k_j$ and depends on the positions only through $\delta=i-j$. Derive the explicit form of $M(\delta)$.
+
+\problem{e24-1d}{Layer normalization}{2024 Midterm, Problem 1(d)}{5}
+The data batch $\bm X$ contains one sequence of four 2-dimensional vectors. For simplicity, we set the parameter $\epsilon=0$, the rescale mean $\beta=0$, and the rescale standard variation $\gamma=1$. Compute the output of layer normalization operating on $\bm X$.
+\[
+ \bm X=\layerbatch.
+\]
+
+\problem{e25-1c}{Layer normalization}{2025 Midterm, Problem 1(c)}{5}
+The data batch $\bm X$ contains one sequence of four 2-dimensional vectors. For simplicity, we set the parameter $\epsilon=0$, the rescale mean $\beta=0$, and the rescale standard variation $\gamma=1$. Compute the output of layer normalization operating on $\bm X$.
+\[
+ \bm X=\layerbatch.
+\]
+
+\topic{Variational Autoencoders / 变分自编码器}
+
+\problem{e24-2a}{Variational lower bound}{2024 Midterm, Problem 2(a)}{10}
+Let $Z$ be the latent variable. Let $p(\bm z)$ be the prior distribution. Assume the conditional density function $p_\theta(\bm x\mid\bm z)$ is parametrized by a neural network $\theta$, the posterior distribution $q_\phi(\bm z\mid\bm x)$ is parametrized by a neural network $\phi$. Prove the variational lower bound
+\[
+ \log p_\theta(\bm x)\geq\E_{q_\phi(\bm z\mid\bm x)}
+ \left[\log\frac{p_\theta(\bm x,\bm z)}{q_\phi(\bm z\mid\bm x)}\right].
+\]
+
+\problem{e25-2a}{Variational lower bound}{2025 Midterm, Problem 2(a)}{10}
+Let $Z$ be the latent variable. Let $p(\bm z)$ be the prior distribution. Assume the conditional density function $p_\theta(\bm x\mid\bm z)$ is parametrized by a neural network $\theta$, the posterior distribution $q_\phi(\bm z\mid\bm x)$ is parametrized by a neural network $\phi$. Prove the variational lower bound
+\[
+ \log p_\theta(\bm x)\geq\E_{q_\phi(\bm z\mid\bm x)}
+ \left[\log\frac{p_\theta(\bm x,\bm z)}{q_\phi(\bm z\mid\bm x)}\right].
+\]
+
+\problem{a1-1}{Deriving the ELBO}{Assignment 1, Question 1}{}
+Let $p_\theta(x,z)=p(z)p_\theta(x\mid z)$ and let $q_\phi(z\mid x)$ be an approximate posterior. Derive
+\[
+ \log p_\theta(x)\geq
+ \underbrace{\E_{q_\phi(z\mid x)}[\log p_\theta(x\mid z)]
+ -\KL(q_\phi(z\mid x)\|p(z))}_{\mathcal L(\theta,\phi;x)},
+\]
+and identify when equality holds. You may assume common support and finite required expectations.
+
+\problem{a1-2}{KL divergence between Gaussians}{Assignment 1, Question 2}{}
+For $d$-dimensional Gaussians $q(z)=\N(\mu_q,\Sigma_q)$ and $p(z)=\N(\mu_p,\Sigma_p)$ with positive definite covariance matrices, derive the closed form of $\KL(q\|p)$.
+
+\problem{e24-2b}{Reparameterization trick}{2024 Midterm, Problem 2(b)}{10}
+The reparameterization trick is applied to deduce the training objective of VAE. Describe what is the reparameterization trick in VAE and explain why we need it.
+
+\problem{e25-2b}{Reparameterization trick}{2025 Midterm, Problem 2(b)}{10}
+The reparameterization trick is a key technique for training VAEs. Describe what is the reparameterization trick in VAE and explain why we need it.
+
+\problem{a1-3}{Reparameterization with log-variance outputs}{Assignment 1, Question 3}{}
+An encoder outputs $\mu,r\in\R^d$, where $r_i=\log\sigma_i^2$. Define
+\[
+ F(\mu,r)=\E_{z\sim\N(\mu,\operatorname{diag}(e^r))}[f(z)].
+\]
+Assume that $f$ is differentiable, and that differentiation and expectation may be interchanged. Using parameter-independent noise $\epsilon\sim\N(0,I)$, derive a reparameterized expression for $\nabla_{(\mu,r)}F$.
+
+\topic{GANs and Divergences / GAN 与分布距离}
+
+\problem{e24-3a}{GAN training and inference}{2024 Midterm, Problem 3(a)}{10}
+Given a dataset $\mathcal D=\{x_i\}_{i\in[n]}$, a discriminator $f_D$, and a generator $f_G$, briefly introduce the training and inference process of GAN.
+
+\problem{e25-3a}{GAN training objective}{2025 Midterm, Problem 3(a)}{10}
+Given a dataset $\mathcal D=\{x_i\}_{i\in[n]}$, a discriminator $f_D$, a generator $f_G$, explain the training objective of GAN.
+
+\problem{a3-1}{GAN as a minimax game}{Assignment 3, Question 1}{}
+Let $z\sim p_z$ and let $G_\theta(z)$ induce the generator distribution $p_g$. Let $p_{\mathrm{data}}$ be the real data distribution, and let $D(x)\in[0,1]$ estimate the probability that $x$ is real. Assume that $p_{\mathrm{data}}$ and $p_g$ admit densities with respect to a common reference measure, and use the convention $0\log0=0$.
+\begin{enumerate}
+\item Write down the complete minimax objective $\min_G\max_D V(D,G)$ for the original GAN. Explain the goals of the generator and the discriminator.
+\item For a fixed generator $G$, prove that an optimal discriminator is
+\[
+ D^*(x)=\frac{p_{\mathrm{data}}(x)}{p_{\mathrm{data}}(x)+p_g(x)}
+\]
+wherever $p_{\mathrm{data}}(x)+p_g(x)>0$.
+\item During a generator update, hold the discriminator fixed and write $D(x)=\sigma(a(x))$, where $a(x)$ is its logit and $\sigma(a)=(1+e^{-a})^{-1}$. For one generated sample, consider
+\[
+ \ell_{\mathrm{sat}}(a)=\log(1-\sigma(a)),\qquad
+ \ell_{\mathrm{ns}}(a)=-\log\sigma(a),
+\]
+both of which are minimized by the generator. Derive their derivatives with respect to $a$ and use the chain rule to explain why the original loss can yield vanishing generator gradients when $D(G_\theta(z))\approx0$, and how the non-saturating loss addresses this.
+\end{enumerate}
+
+\problem{a3-2}{Optimal GAN and Jensen--Shannon divergence}{Assignment 3, Question 2}{}
+Let $C(G)=\max_D V(D,G)$, where the maximization is over all measurable discriminators $D:\mathcal X\to[0,1]$. Define the mixture density $m=(p_{\mathrm{data}}+p_g)/2$ and recall
+\[
+ \KL(p\|q)=\E_{x\sim p}\left[\log\frac{p(x)}{q(x)}\right],
+\]
+\[
+ \JSD(p\|q)=\tfrac12\KL\!\left(p\middle\|\frac{p+q}{2}\right)
+ +\tfrac12\KL\!\left(q\middle\|\frac{p+q}{2}\right).
+\]
+Using the optimal discriminator from Problem~\ref{a3-1} (Assignment 3, Question 1), prove that
+\[
+ C(G)=2\JSD(p_{\mathrm{data}}\|p_g)-2\log2.
+\]
+Over all generator distributions, show that its global minimum is $-2\log2$, attained if and only if $p_g=p_{\mathrm{data}}$ almost everywhere. All logarithms are natural.
+
+\problem{e24-3b}{KL and f-divergence}{2024 Midterm, Problem 3(b)}{10}
+Prove that the Kullback-Leibler (KL) divergence is a special case of $f$-divergence.
+
+\problem{e25-3b}{Formation-switching model}{2025 Midterm, Problem 3(b)}{10}
+广场上一群大爷大妈跳广场舞，队形在直线与圆圈间切换，考虑到参与者的年龄，平均移动距离应尽量短，作为老年歌舞团首席指挥的你，如何对该问题进行建模？
+
+\topic{Normalizing Flows / 归一化流}
+
+\problem{e24-4a}{Change of variables}{2024 Midterm, Problem 4(a)}{5}
+Let $\bm Z\in\R^d$ be a random vector with probability density $p_Z(\bm z)$. $\bm X$ is a random vector given by $\bm X=g(\bm Z)$, where $g(\cdot):\R^d\to\R^d$ is a smooth function. Denote the probability density function of $\bm X$ by $p_X(\bm x)$. Use the multidimensional change of variables theorem to deduce the relationship between $p_Z(\bm z)$ and $p_X(\bm x)$.
+
+\problem{e25-4a}{Change of variables}{2025 Midterm, Problem 4(a)}{10}
+Let $\bm Z\in\R^d$ be a random vector with probability density $p_Z(\bm z)$. $\bm X$ is a random vector given by $\bm X=g(\bm Z)$, where $g(\cdot):\R^d\to\R^d$ is a smooth and invertible function. Denote the probability density function of $\bm X$ by $p_X(\bm x)$. Use the multidimensional change of variables theorem to deduce the relationship between $p_Z(\bm z)$ and $p_X(\bm x)$.
+
+\problem{e24-4bc}{Invertible MLP: design and algorithms}{2024 Midterm, Problem 4(b)--(c)}{15}
+\begin{enumerate}[start=2]
+\item \points{10} The normalizing flow is constructed by invertible networks. Now we consider the MLP case. Assume the neural network $g(\cdot):\R^d\to\R^d$ is given by $g(\bm x)=\sigma(W\bm x+\bm b)$, where $\sigma$ is the activation function, $W\in\R^{d\times d}$, $\bm b\in\R^d$. Design an invertible $g(\bm x)$ by adding constraints to its parameters and activation function. You should write down your choice of $W,\bm b,\sigma$ explicitly.
+\item \points{5} With your designed invertible MLP network in (b), briefly describe the training and inference algorithm of this model. At least, you need to write down the training objective and the inference algorithm.
+\end{enumerate}
+
+\problem{e25-4b}{Masked Autoregressive Flow (MAF)}{2025 Midterm, Problem 4(b)(i)--(iii)}{10}
+Let $z\in\R^d$ be a latent variable drawn from a standard Gaussian $p_Z(z)=\N(0,I)$. Consider a single-layer \textbf{Masked Autoregressive Flow (MAF)} defined by a map $f:\R^d\to\R^d$ that transforms $z$ into $x=f(z)$, with components
+\[
+ x_i=\mu_i(x_{1:i-1})+\sigma_i(x_{1:i-1})\,z_i,\qquad i=1,\ldots,d,
+\]
+where $\mu_i(\cdot)$ and $\sigma_i(\cdot)>0$ are outputs of a masked autoregressive network.
+\begin{enumerate}[label=(\roman*)]
+\item \points{5} Derive the log-determinant of the Jacobian, $\log|\det J_f(z)|$. Here $J_f(z)$ denotes the Jacobian matrix of $f:\R^d\to\R^d$ at the point $z=(z_1,\ldots,z_d)^\top$, whose $(i,j)$-th entry is
+\[
+ (J_f(z))_{ij}=\frac{\partial f_i(z)}{\partial z_j}.
+\]
+\item \points{2} Using the change-of-variables formula, derive the log-density of the transformed variable $x$:
+\[
+ \log p_X(x)=\log p_Z(f^{-1}(x))-\log|\det J_f(z)|.
+\]
+Explicitly write out $f^{-1}$ for this flow.
+\item \points{3} Explain why training the MAF under the maximum-likelihood objective can be performed \textit{in parallel} across all dimensions.
+\end{enumerate}
+
+\topic{Diffusion Models / 扩散模型}
+
+{\small\textbf{Notation / 符号说明：}本节保留各来源的符号约定。往年题用 $\bar\alpha_t$ 表示累计乘积；Assignment 4 用 $\alpha_t$ 表示累计乘积。两种记法不在本题库中强行统一。位置与时间嵌入的交叉题见 Problem~\ref{e25-1a}。}
+
+\problem{e24-5a}{DDPM forward process}{2024 Midterm, Problem 5(a)}{5}
+Let $\bm X_0$ denote the data (e.g., clean images), and $\bm X_t$ denote its noisy version at time $t$. Assume the time schedule of the DDPM model is $\beta_t$. Write down the forward process of the diffusion model.
+
+\problem{e25-5a}{DDPM forward process}{2025 Midterm, Problem 5(a)}{5}
+Let $\bm X_0$ denote the data (e.g., clean images), and $\bm X_t$ denote its noisy version at time $t$. Assume the time schedule of the DDPM model is $\beta_t$. Write down the forward process of the diffusion model.
+
+\problem{e24-5b}{Forward marginal distribution}{2024 Midterm, Problem 5(b)}{5}
+Use the DDPM setup in Problem~\ref{e24-5a}. Prove that the marginal distribution $p(\bm x_t\mid\bm x_0)$ is given by
+\[
+ p(\bm x_t\mid\bm x_0)=\N\!\left(\bm x_t\mid\sqrt{\bar\alpha_t}\bm x_0,(1-\bar\alpha_t)I\right),
+\]
+where $\bar\alpha_t=\prod_{i=1}^t(1-\beta_i)$.
+
+\problem{e25-5b}{Forward marginal distribution}{2025 Midterm, Problem 5(b)}{5}
+Use the DDPM setup in Problem~\ref{e25-5a}. Prove that the marginal distribution $p_t(\bm x_t\mid\bm x_0)$ is given by
+\[
+ p_t(\bm x_t\mid\bm x_0)=\N\!\left(\bm x_t\mid\sqrt{\bar\alpha_t}\bm x_0,(1-\bar\alpha_t)I\right),
+\]
+where $\bar\alpha_t=\prod_{i=1}^t(1-\beta_i)$.
+
+\problem{a4-1}{Gaussian noise and the forward process}{Assignment 4, Question 1}{}
+\textbf{Shared notation for this problem and Problem~\ref{a4-2} (following the lecture slides).}
+Work in one dimension. Write $\N(\mu,\sigma^2)$ for a Gaussian with mean $\mu$ and variance $\sigma^2$, and let $\E$ denote expectation. Let $T\geq2$ be the number of noising steps, $x_0$ a clean sample, and $x_t$ its noisy version after step $t$. For $t=1,\ldots,T$, let $\beta_t\in(0,1)$ be the noise variance and $\epsilon_t\sim\N(0,1)$ be independent of $x_0$ and all other noise draws. Define the cumulative signal power $\alpha_0=1$ and $\alpha_t=(1-\beta_1)\cdots(1-\beta_t)$. The forward process is
+\begin{equation}
+ x_t=\sqrt{1-\beta_t}\,x_{t-1}+\sqrt{\beta_t}\,\epsilon_t.
+ \label{eq:a4-forward}
+\end{equation}
+\begin{enumerate}
+\item For constants $a,b>0$, find the mean, variance of $a\epsilon_1+b\epsilon_2$. Prove the distribution is Gaussian.
+\item Let $\epsilon\sim\N(0,1)$ be independent of $x_0$. For any fixed step $t$, prove that directly sampling
+\begin{equation}
+ x_t=\sqrt{\alpha_t}\,x_0+\sqrt{1-\alpha_t}\,\epsilon
+ \label{eq:a4-marginal}
+\end{equation}
+gives the same distribution as applying \eqref{eq:a4-forward} $t$ times, with $x_0$ held fixed.
+\end{enumerate}
+
+\problem{e24-5c}{Gaussian posterior}{2024 Midterm, Problem 5(c)}{3}
+Use the DDPM setup and the definition of $\bar\alpha_t$ in Problems~\ref{e24-5a} and~\ref{e24-5b}. Prove that the posterior distribution conditioning on $\bm X_0$ is given by
+\[
+ p(\bm x_{t-1}\mid\bm x_0,\bm x_t)=\N\!\left(\bm x_{t-1}\mid\widetilde\mu_t(\bm x_0,\bm x_t),\widetilde\beta_t\right),
+\]
+where
+\[
+ \widetilde\mu_t(\bm x_0,\bm x_t)=
+ \frac{\sqrt{\bar\alpha_{t-1}}\,\beta_t}{1-\bar\alpha_t}\bm x_0
+ +\frac{\sqrt{\alpha_t}(1-\bar\alpha_{t-1})}{1-\bar\alpha_t}\bm x_t,
+\]
+\[
+ \widetilde\beta_t=\frac{1-\bar\alpha_{t-1}}{1-\bar\alpha_t}\beta_t,
+ \qquad \alpha_t=1-\beta_t.
+\]
+
+\problem{a4-2}{The Gaussian posterior}{Assignment 4, Question 2}{}
+Use the shared one-dimensional notation in Problem~\ref{a4-1}. Write $q_t(\,\cdot\mid\cdot\,)$ for a conditional density of the forward process at step $t$. For $2\leq t\leq T$, suppose $x_0$ and $x_t$ are known. The posterior $q_{t-1}(x_{t-1}\mid x_t,x_0)$ describes the preceding noisy sample given these values. Following the lecture slides, denote its mean by $\widetilde u_t(x_t,x_0)$ and variance by $\widetilde\beta_t$. Prove that this posterior is Gaussian with
+\[
+ \widetilde u_t(x_t,x_0)=\frac{\sqrt{\alpha_{t-1}}\,\beta_t}{1-\alpha_t}x_0
+ +\frac{\sqrt{1-\beta_t}(1-\alpha_{t-1})}{1-\alpha_t}x_t,
+\]
+\[
+ \widetilde\beta_t=\frac{1-\alpha_{t-1}}{1-\alpha_t}\beta_t.
+\]
+
+\problem{e24-5d}{DDPM training and inference}{2024 Midterm, Problem 5(d)}{7}
+Briefly describe the training and inference algorithm of DDPM.
+
+\problem{e25-5c}{DDPM training and inference}{2025 Midterm, Problem 5(c)}{10}
+Briefly describe the training and inference algorithm of DDPM.
+
+\topic{Language Model Fine-tuning / 语言模型微调}
+
+\problem{a5-1}{Pre-training and fine-tuning stages}{Assignment 5, Question 1}{}
+\textbf{Pre-training, instruction fine-tuning, and reinforcement fine-tuning.}
+Compare these three training stages for language models in terms of the data used, the training objective and feedback signal, and the role of each stage. Explain how learning from reference responses differs from learning from rewards assigned to model-generated responses. This is a discussion question. Answer in words; no mathematical formulas are required.
+
+\problem{a5-2}{The log-derivative trick}{Assignment 5, Question 2}{}
+For a fixed prompt, let $p(s;\theta)$ be a differentiable probability mass function over responses $s$, with $\theta\in\R^d$. Let $R(s)$ be a reward function that does not depend on $\theta$, and define
+\[
+ J(\theta)=\E_{s\sim p(\cdot;\theta)}[R(s)].
+\]
+Assume that $p(s;\theta)>0$ on a parameter-independent support, that all required expectations are finite, and that differentiation and summation may be interchanged. Prove the identities
+\[
+ \nabla_\theta p(s;\theta)=p(s;\theta)\nabla_\theta\log p(s;\theta),
+\]
+\[
+ \nabla_\theta J(\theta)=\E_{s\sim p(\cdot;\theta)}[R(s)\nabla_\theta\log p(s;\theta)].
+\]
+
+\clearpage
+\problem{a5-3}{A baseline with constant rewards}{Assignment 5, Question 3}{}
+Use the setup of Problem~\ref{a5-2} (Assignment 5, Question 2), with $\theta\in\R$ and $R(s)=1$ for every response $s$.
+\begin{enumerate}
+\item Show that $J(\theta)=1$ for every $\theta$, so every $\theta$ is optimal.
+\item For one sampled response $s\sim p(\cdot;\theta)$, consider the update
+\[
+ \Delta\theta=\eta\frac{d}{d\theta}\log p(s;\theta),\qquad\eta>0.
+\]
+Assume $\frac{d}{d\theta}\log p(s;\theta)\neq0$. Show that $\Delta\theta\neq0$, even though $\theta$ is already optimal.
+\item Now use the baseline $b=1$, giving the update
+\[
+ \Delta\theta_b=\eta\bigl(R(s)-b\bigr)\frac{d}{d\theta}\log p(s;\theta).
+\]
+Show that $\Delta\theta_b=0$ for every sample, and hence $\operatorname{Var}(\Delta\theta_b)=0$.
+\end{enumerate}
+
+\par\addvspace{14pt}\Needspace{9\baselineskip}
+\section*{Additional Original Question / 原卷其他题目}
+\phantomsection\addcontentsline{toc}{section}{Additional Original Question / 原卷其他题目}
+\problem{e25-0}{Sanity Check}{2025 Midterm, Problem 0}{5}
+请正确写出任课老师的中文姓名。
+
+\end{document}

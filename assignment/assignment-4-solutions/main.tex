@@ -1,0 +1,155 @@
+% !TeX program = xelatex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[hidelinks]{hyperref}
+
+\newcommand{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\newcommand{\N}{\mathcal{N}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[1]
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries Assignment 4: Diffusion Models}\\[8pt]
+  Name: 张逸林
+  \hspace{8mm}
+  Student ID: 2500013576
+\end{center}
+
+\section*{1.}
+
+\paragraph{(a)}
+Let \(Y=a\epsilon_1+b\epsilon_2\). By independence,
+\[
+\E[Y]=0,\qquad \Var(Y)=a^2+b^2.
+\]
+Its moment-generating function is
+\[
+M_Y(s)=\E[e^{sa\epsilon_1}]\E[e^{sb\epsilon_2}]
+=e^{a^2s^2/2}e^{b^2s^2/2}
+=e^{(a^2+b^2)s^2/2}.
+\]
+This is the moment-generating function of \(\N(0,a^2+b^2)\), so
+\(Y\sim\N(0,a^2+b^2)\).
+
+\paragraph{(b)}
+We prove by induction that
+\[
+x_t\mid x_0\sim\N\!\left(\sqrt{\alpha_t}\,x_0,\,1-\alpha_t\right).
+\]
+For \(t=1\), this follows from
+\(x_1=\sqrt{1-\beta_1}\,x_0+\sqrt{\beta_1}\,\epsilon_1\).
+Assume the claim holds at \(t-1\). Since \(\epsilon_t\) is independent
+of \(x_{t-1}\) and \(x_0\), part (a) implies that \(x_t\mid x_0\) is
+Gaussian, with
+\[
+\begin{aligned}
+\E[x_t\mid x_0]
+&=\sqrt{1-\beta_t}\sqrt{\alpha_{t-1}}\,x_0
+=\sqrt{\alpha_t}\,x_0,\\
+\Var(x_t\mid x_0)
+&=(1-\beta_t)(1-\alpha_{t-1})+\beta_t
+=1-\alpha_t.
+\end{aligned}
+\]
+Thus, for fixed \(x_0\),
+\[
+\boxed{x_t\overset{d}{=}\sqrt{\alpha_t}\,x_0+\sqrt{1-\alpha_t}\,\epsilon,
+\qquad \epsilon\sim\N(0,1).}
+\]
+
+\section*{2.}
+
+Let \(y=x_{t-1}\). By Bayes' rule and the Markov property,
+\[
+\begin{aligned}
+q_{t-1}(y\mid x_t,x_0)
+&\propto q_t(x_t\mid y)\,q_{t-1}(y\mid x_0)\\
+&\propto \exp\!\left[
+-\frac12\left(
+\frac{(x_t-\sqrt{1-\beta_t}\,y)^2}{\beta_t}
++\frac{(y-\sqrt{\alpha_{t-1}}\,x_0)^2}{1-\alpha_{t-1}}
+\right)\right].
+\end{aligned}
+\]
+Set
+\[
+\begin{aligned}
+A&=\frac{1-\beta_t}{\beta_t}+\frac{1}{1-\alpha_{t-1}}
+=\frac{1-\alpha_t}{\beta_t(1-\alpha_{t-1})}>0,\\
+B&=\frac{\sqrt{1-\beta_t}}{\beta_t}\,x_t
++\frac{\sqrt{\alpha_{t-1}}}{1-\alpha_{t-1}}\,x_0.
+\end{aligned}
+\]
+Completing the square,
+\[
+q_{t-1}(y\mid x_t,x_0)
+\propto e^{-\frac12(Ay^2-2By)}
+\propto e^{-\frac A2(y-B/A)^2},
+\]
+so the posterior is \(\N(B/A,A^{-1})\), with
+\[
+\boxed{
+\begin{aligned}
+\tilde u_t(x_t,x_0)
+&=\frac{\sqrt{\alpha_{t-1}}\beta_t}{1-\alpha_t}\,x_0
++\frac{\sqrt{1-\beta_t}(1-\alpha_{t-1})}{1-\alpha_t}\,x_t,\\
+\tilde\beta_t
+&=\frac{\beta_t(1-\alpha_{t-1})}{1-\alpha_t}.
+\end{aligned}}
+\]
+
+\clearpage
+\section*{3.}
+
+\paragraph{(a)}
+The encoder \(\mathcal E\) compresses an image \(x\) into a latent
+\(z_0=\mathcal E(x)\), and the decoder \(\mathcal D\) reconstructs it as
+\(\mathcal D(z_0)\). The diffusion model learns the latent distribution
+by reversing a Gaussian noising process. Noise is added in latent space.
+
+\paragraph{(b)}
+First, train the encoder and decoder with reconstruction/perceptual
+and adversarial losses, together with a weak KL regularization term
+for the VAE-style autoencoder.
+
+Next, freeze \(\mathcal E\) and \(\mathcal D\), and train a
+time-conditioned U-Net \(\epsilon_\theta\) on noisy latents:
+\[
+z_0=\mathcal E(x),\qquad
+z_t=\sqrt{\alpha_t}\,z_0+\sqrt{1-\alpha_t}\,\epsilon,
+\qquad \epsilon\sim\N(0,I).
+\]
+The prediction target is the added noise \(\epsilon\), with loss
+\[
+\boxed{
+\mathcal L_{\mathrm{LDM}}
+=\E_{x,t,\epsilon}\!\left[
+\left\|\epsilon-\epsilon_\theta(z_t,t)\right\|_2^2
+\right],
+\qquad t\sim\mathrm{Uniform}(\{1,\ldots,T\}).
+}
+\]
+
+\paragraph{(c)}
+Sample \(z_T\sim\N(0,I)\), then use \(\epsilon_\theta\) in the reverse
+sampling steps to obtain \(\hat z_0\). All denoising takes place in latent
+space. Finally, apply the decoder once to generate the image:
+\[
+z_T
+\xrightarrow{\epsilon_\theta(\cdot,T)}
+z_{T-1}
+\longrightarrow\cdots\longrightarrow
+\hat z_0
+\xrightarrow{\mathcal D}
+\hat x.
+\]
+
+\end{document}

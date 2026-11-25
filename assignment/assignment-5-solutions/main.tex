@@ -1,0 +1,175 @@
+% !TeX program = xelatex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[hidelinks]{hyperref}
+\usepackage{needspace}
+
+\newcommand{\E}{\mathbb{E}}
+\DeclareMathOperator{\Var}{Var}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\pref}{p_{\mathrm{ref}}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[1]
+
+\hypersetup{
+  pdftitle={Assignment 5: Language Model Fine-tuning},
+  pdfauthor={Yilin Zhang},
+  pdfsubject={Solutions to Assignment 5 of Generative Models}
+}
+
+\begin{document}
+\setlength{\abovedisplayskip}{7pt}
+\setlength{\belowdisplayskip}{7pt}
+\setlength{\abovedisplayshortskip}{4pt}
+\setlength{\belowdisplayshortskip}{5pt}
+
+\begin{center}
+  {\Large\bfseries Assignment 5: Language Model Fine-tuning}\\[8pt]
+  Name: 张逸林
+  \hspace{8mm}
+  Student ID: 2500013576
+\end{center}
+
+\section*{1.}
+
+\textbf{Pre-training.}
+Pre-training uses large-scale text data, including news, papers, books, and code.
+Its objective is to predict the next token in an autoregressive model.
+The supervision comes from the next token actually present in the text, so this
+is self-supervised learning, typically trained by minimizing cross-entropy loss.
+Pre-training enables the model to learn general language patterns, knowledge,
+and reusable representations, and provides initial parameters for fine-tuning.
+
+\textbf{Instruction fine-tuning.}
+Instruction fine-tuning uses pairs of instructions and reference responses, such as QA
+interactions. Starting from the pre-trained parameters, the model is trained
+with supervised learning to predict the tokens in the reference responses and
+minimize cross-entropy loss. This teaches the model to follow instructions,
+fit the chat format, and apply its existing knowledge to specific tasks.
+It can be viewed as an extension of pre-training in the sense that it continues
+to use a next-token prediction loss, but now trains on task examples.
+
+\textbf{Reinforcement fine-tuning.}
+Reinforcement fine-tuning uses prompts and model-generated responses, with
+rewards assigned to evaluate the responses. These rewards may come from human
+feedback, a learned reward model, or rules. The model updates its parameters
+to maximize the expected reward of its responses, with the aim of better aligning
+its outputs with user preferences and practical task requirements.
+
+\textbf{Reference responses versus rewards.}
+Learning from reference responses gives the model concrete examples of how to
+answer, with a target token at each position. Learning from rewards instead
+lets the model generate a response first and then uses a score to evaluate
+the whole response. The score does not necessarily specify the correct next
+token or a particular reference response to imitate. Different valid responses
+may receive high rewards.
+
+\section*{2.}
+
+Since \(p(s;\theta)>0\) and \(p(s;\theta)\) is differentiable in \(\theta\),
+the chain rule gives
+\[
+\nabla_\theta\log p(s;\theta)
+=\frac{1}{p(s;\theta)}\nabla_\theta p(s;\theta).
+\]
+Multiplying both sides by \(p(s;\theta)\), we obtain
+\[
+\nabla_\theta p(s;\theta)
+=p(s;\theta)\nabla_\theta\log p(s;\theta).
+\]
+
+By assumption, differentiation and summation may be interchanged, and
+\(R(s)\) does not depend on \(\theta\). Therefore,
+\[
+\begin{aligned}
+\nabla_\theta J(\theta)
+&=\nabla_\theta\E_{s\sim p(\cdot;\theta)}[R(s)]\\
+&=\nabla_\theta\sum_s p(s;\theta)R(s)\\
+&=\sum_s R(s)\nabla_\theta p(s;\theta)\\
+&=\sum_s R(s)p(s;\theta)\nabla_\theta\log p(s;\theta)\\
+&=\E_{s\sim p(\cdot;\theta)}
+  \left[R(s)\nabla_\theta\log p(s;\theta)\right].
+\end{aligned}
+\]
+
+\newpage
+\section*{3.}
+
+\textbf{(a)}
+Since \(R(s)=1\) for every response and \(\sum_s p(s;\theta)=1\),
+\[
+J(\theta)=\sum_s p(s;\theta)R(s)=\sum_s p(s;\theta)=1.
+\]
+Thus, \(J\) is constant, and every \(\theta\in\mathbb{R}\) is a global maximizer.
+
+\textbf{(b)}
+Since \(\eta>0\) and \(\frac{d}{d\theta}\log p(s;\theta)\neq 0\),
+\[
+\Delta\theta=\eta\frac{d}{d\theta}\log p(s;\theta)\neq 0.
+\]
+By part (a), the current \(\theta\) is already optimal, even though this
+single-sample update is nonzero.
+
+\textbf{(c)}
+With \(R(s)=1\) and \(b=1\), every sampled response gives
+\[
+\Delta\theta_b
+=\eta(1-1)\frac{d}{d\theta}\log p(s;\theta)=0.
+\]
+Hence, \(\Delta\theta_b\) is identically zero, and
+\(\Var(\Delta\theta_b)=0\).
+
+\Needspace{12\baselineskip}
+\section*{4.}
+
+Write
+\[
+Z=\sum_{s\in\mathcal{S}}\pref(s)e^{R(s)/\beta},
+\qquad
+p^\star(s)=\frac{1}{Z}\pref(s)e^{R(s)/\beta}.
+\]
+Since \(\mathcal{S}\) is finite, \(R(s)\in\mathbb{R}\),
+\(\pref(s)>0\), and \(\beta>0\), we have \(0<Z<\infty\).
+Also, \(p^\star(s)>0\) and \(\sum_{s\in\mathcal{S}}p^\star(s)=Z/Z=1\),
+so \(p^\star\) is a valid probability distribution. All sums below are over
+\(s\in\mathcal{S}\), with zero-probability terms interpreted as zero.
+
+\textbf{(a)}
+Taking the logarithm of \(p^\star(s)\) gives
+\[
+\log p^\star(s)=\log\pref(s)+\frac{R(s)}{\beta}-\log Z.
+\]
+Expanding the KL divergence, we obtain
+\[
+\begin{aligned}
+\KL(p\Vert p^\star)
+&=\sum_s p(s)\log\frac{p(s)}{p^\star(s)}\\
+&=\sum_s p(s)
+  \left[\log\frac{p(s)}{\pref(s)}-\frac{R(s)}{\beta}+\log Z\right]\\
+&=\KL(p\Vert\pref)
+  -\frac{1}{\beta}\E_{s\sim p}[R(s)]+\log Z,
+\end{aligned}
+\]
+where the last step uses \(\sum_s p(s)=1\). Rearranging yields
+\[
+F(p)=\E_{s\sim p}[R(s)]-\beta\KL(p\Vert\pref)
+=\beta\log Z-\beta\KL(p\Vert p^\star).
+\]
+
+\textbf{(b)}
+By the non-negativity of KL divergence and \(\beta>0\),
+\[
+F(p)=\beta\log Z-\beta\KL(p\Vert p^\star)\leq\beta\log Z.
+\]
+At \(p=p^\star\), we have \(\KL(p^\star\Vert p^\star)=0\), so
+\(F(p^\star)=\beta\log Z\). Equality holds if and only if
+\(\KL(p\Vert p^\star)=0\), which is equivalent to \(p=p^\star\).
+Therefore, \(p^\star\) is the unique global maximizer of \(F\), with
+maximum value \(\beta\log Z\).
+
+\end{document}

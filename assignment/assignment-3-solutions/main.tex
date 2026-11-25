@@ -1,0 +1,149 @@
+% !TeX program = xelatex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[hidelinks]{hyperref}
+
+\DeclareMathOperator{\KL}{D_{\mathrm{KL}}}
+\DeclareMathOperator{\JSD}{JSD}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\pdata}{p_{\mathrm{data}}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[1]
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries Assignment 3: Generative Adversarial Networks}\\[8pt]
+  Name: 张逸林
+  \hspace{8mm}
+  Student ID: 2500013576
+\end{center}
+
+\section*{1.}
+
+\paragraph{(a)}
+\[
+\min_G\max_D V(D,G)
+=
+\min_G\max_D
+\left\{
+\E_{x\sim\pdata}[\log D(x)]
++
+\E_{z\sim p_z}[\log(1-D(G(z)))]
+\right\}.
+\]
+The discriminator distinguishes real samples from generated ones; the
+generator aims to match the real data distribution by fooling the discriminator.
+
+\paragraph{(b)}
+For fixed \(G\), let \(\mu\) be the common reference measure.
+\[
+V(D,G)=\int
+\left[\pdata(x)\log D(x)+p_g(x)\log(1-D(x))\right]\,d\mu(x).
+\]
+Maximize pointwise with \(a=\pdata(x)\), \(b=p_g(x)\), and \(t=D(x)\).
+For \(a,b>0\),
+\[
+h(t)=a\log t+b\log(1-t),\qquad
+h'(t)=\frac{a}{t}-\frac{b}{1-t},\qquad
+h''(t)=-\frac{a}{t^2}-\frac{b}{(1-t)^2}<0.
+\]
+The unique maximum satisfies
+\[
+h'(t)=0\iff a(1-t)=bt\iff t^*=\frac{a}{a+b}.
+\]
+For \(a>0,b=0\), \(t^*=1\); for \(a=0,b>0\), \(t^*=0\). Thus
+\[
+\boxed{D^*(x)=\frac{\pdata(x)}{\pdata(x)+p_g(x)}}
+\qquad\text{whenever }\pdata(x)+p_g(x)>0.
+\]
+If \(a=b=0\), any \(D(x)\in[0,1]\) is optimal.
+
+\paragraph{(c)}
+Let \(s=\sigma(a)\). Since \(\sigma'(a)=s(1-s)\),
+\[
+\frac{d\ell_{\mathrm{sat}}}{da}
+=-\frac{s(1-s)}{1-s}=-s,
+\qquad
+\frac{d\ell_{\mathrm{ns}}}{da}
+=-\frac{s(1-s)}{s}=s-1.
+\]
+For fixed \(D,z\), let \(s=D(G_\theta(z))\). By the chain rule,
+\[
+\begin{aligned}
+\nabla_\theta\ell_{\mathrm{sat}}
+&=-s\,\nabla_\theta a(G_\theta(z)),\\
+\nabla_\theta\ell_{\mathrm{ns}}
+&=-(1-s)\,\nabla_\theta a(G_\theta(z)).
+\end{aligned}
+\]
+When \(s\approx0\), the factor \(-s\approx0\) suppresses generator gradients,
+whereas \(-(1-s)\approx-1\) avoids this suppression.
+
+\clearpage
+\section*{2.}
+
+Write \(p=\pdata\), \(q=p_g\), \(m=(p+q)/2\), and
+\(S=\{x:p(x)+q(x)>0\}\).
+Substituting the optimal discriminator,
+\[
+\begin{aligned}
+C(G)
+&=V(D^*,G)\\
+&=\int_S p(x)\log\frac{p(x)}{p(x)+q(x)}\,d\mu(x)
+ +\int_S q(x)\log\frac{q(x)}{p(x)+q(x)}\,d\mu(x)\\
+&=\int_S p(x)\left(\log\frac{p(x)}{m(x)}-\log2\right)\,d\mu(x)
+ +\int_S q(x)\left(\log\frac{q(x)}{m(x)}-\log2\right)\,d\mu(x)\\
+&=\KL(p\|m)+\KL(q\|m)-2\log2\\
+&=\boxed{2\JSD(p\|q)-2\log2}.
+\end{aligned}
+\]
+By nonnegativity of KL divergence,
+\[
+\begin{aligned}
+C(G)&\ge-2\log2,\\
+C(G)=-2\log2
+&\iff \KL(p\|m)=\KL(q\|m)=0\\
+&\iff p=m=q\quad\text{almost everywhere}\\
+&\iff p=q\quad\text{almost everywhere}.
+\end{aligned}
+\]
+Hence, over all generator distributions,
+\[
+\boxed{\min_G C(G)=-2\log2.}
+\]
+
+\section*{3.}
+
+GigaGAN keeps adversarial training but extends the original
+unconditional GAN to large-scale text-to-image synthesis.
+
+\begin{enumerate}
+\item \textbf{Text conditioning.}
+It uses \(G(z,c)\) and \(D(x,c)\) instead of \(G(z)\) and \(D(x)\).
+Pretrained CLIP text features guide style mapping and word-level
+cross-attention.
+
+\item \textbf{Generator architecture.}
+The StyleGAN2-based generator combines modulated convolutions with
+self- and cross-attention. Sample-adaptive kernel selection mixes a
+filter bank using weights determined by the style code.
+
+\item \textbf{Discriminator and losses.}
+A multi-scale input/output discriminator supervises each image-pyramid
+level independently. The non-saturating GAN loss is supplemented with
+matching-aware losses for mismatched captions paired with real and
+generated images, CLIP contrastive loss, and vision-aided adversarial
+loss using pretrained CLIP features.
+
+\item \textbf{High-resolution synthesis.}
+Two separately trained, text-conditioned GANs perform \(64\times64\)
+image generation and upsampling to \(512\times512\), respectively.
+\end{enumerate}
+
+\end{document}

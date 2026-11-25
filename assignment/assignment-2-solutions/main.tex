@@ -1,0 +1,207 @@
+% !TeX program = xelatex
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[UTF8,scheme=plain,fontset=fandol]{ctex}
+\usepackage[margin=22mm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage[hidelinks]{hyperref}
+
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\diag}{diag}
+\newcommand{\R}{\mathbb{R}}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+\setlength{\emergencystretch}{2em}
+\allowdisplaybreaks[1]
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries Assignment 2: AR and Transformers}\\[8pt]
+  Name: 张逸林
+  \hspace{8mm}
+  Student ID: 2500013576
+\end{center}
+
+\section*{1.}
+
+\paragraph{(a)}
+Unmasked attention allows the model to attend to future tokens during
+training and learn shortcut solutions, such as copying the target token
+\(x_{i+1}\) instead of predicting it from \(x_1,\ldots,x_i\).
+This violates the autoregressive constraint. Since future tokens are
+unavailable during generation, it also creates a mismatch between training
+and inference.
+
+\paragraph{(b)}
+Before applying the row-wise softmax, we set the attention scores at
+positions \(j>i\) to \(-\infty\), while leaving the scores at positions
+\(j\le i\) unchanged.
+Since \(\exp(-\infty)=0\), the corresponding attention weights become zero
+after softmax. Therefore, position \(i\) can attend only to the current and
+previous tokens, preventing it from attending to future tokens.
+
+\section*{2.}
+
+\paragraph{(a)}
+\[
+Q=XW_Q,\qquad K=XW_K,\qquad V=XW_V,\qquad
+\mathrm{output}=\softmax\!\left(\frac{QK^\top}{\sqrt d}\right)V.
+\]
+For the intermediate matrices, we have:
+\[
+\begin{aligned}
+Q,K,V&\in\R^{n\times d},&
+S&=\frac{QK^\top}{\sqrt d}\in\R^{n\times n},\\
+A&=\softmax(S)\in\R^{n\times n},&
+\mathrm{output}&=AV\in\R^{n\times d},
+\end{aligned}
+\]
+where softmax is applied along each row.
+
+\paragraph{(b)}
+The time complexity of \(Q,K,V\) projections is
+\[
+3\cdot O(n\times d\times d)=O(nd^2).
+\]
+The time complexity of the attention computation is
+\[
+O(n^2d)+O(n^2)+O(n^2d)
+=O\!\left(n^2(2d+1)\right)=O(n^2d).
+\]
+Thus, the overall time complexity is \(O(nd^2+n^2d)\).
+
+The attention matrix has shape \(n\times n\) and contains \(n\times n\) elements.
+Therefore, the memory complexity of explicitly storing the attention
+matrix is \(O(n^2)\).
+
+\clearpage
+\section*{3.}
+\begingroup
+\small
+
+Let
+\[
+q_i=(q_1,\ldots,q_{2h})^\top,\qquad
+k_j=(k_1,\ldots,k_{2h})^\top.
+\]
+Let
+\[
+f(q_i,i)=[a_1,\ldots,a_{2h}]^\top,\qquad
+f(k_j,j)=[b_1,\ldots,b_{2h}]^\top,\qquad
+\theta=[\theta_1,\ldots,\theta_h]^\top,
+\]
+where \(\theta_x=b^{-2(x-1)/d}\), \(x=1,\ldots,h\).
+By definition, we have:
+\[
+a_x=
+\begin{cases}
+q_x\cos(i\theta_x)-q_{h+x}\sin(i\theta_x),
+& 1\le x\le h,\\
+q_x\cos(i\theta_{x-h})+q_{x-h}\sin(i\theta_{x-h}),
+& h+1\le x\le 2h,
+\end{cases}
+\]
+\[
+b_x=
+\begin{cases}
+k_x\cos(j\theta_x)-k_{h+x}\sin(j\theta_x),
+& 1\le x\le h,\\
+k_x\cos(j\theta_{x-h})+k_{x-h}\sin(j\theta_{x-h}),
+& h+1\le x\le 2h.
+\end{cases}
+\]
+Then we have:
+\begin{align*}
+f(q_i,i)^\top f(k_j,j)
+&=\sum_{x=1}^{2h}a_xb_x\\
+&=\sum_{x=1}^{h}
+  \bigl(q_x\cos(i\theta_x)-q_{h+x}\sin(i\theta_x)\bigr)
+  \bigl(k_x\cos(j\theta_x)-k_{h+x}\sin(j\theta_x)\bigr)\\
+&\quad+\sum_{x=h+1}^{2h}
+  \bigl(q_x\cos(i\theta_{x-h})+q_{x-h}\sin(i\theta_{x-h})\bigr)\\
+&\hspace{37mm}\cdot
+  \bigl(k_x\cos(j\theta_{x-h})+k_{x-h}\sin(j\theta_{x-h})\bigr)\\
+&=\sum_{x=1}^{h}\Bigl[
+ q_xk_x\cos(i\theta_x)\cos(j\theta_x)
+ -q_xk_{h+x}\cos(i\theta_x)\sin(j\theta_x)\\
+&\hspace{21mm}
+ -q_{h+x}k_x\sin(i\theta_x)\cos(j\theta_x)
+ +q_{h+x}k_{h+x}\sin(i\theta_x)\sin(j\theta_x)
+ \Bigr]\\
+&\quad+\sum_{x=h+1}^{2h}\Bigl[
+ q_xk_x\cos(i\theta_{x-h})\cos(j\theta_{x-h})
+ +q_xk_{x-h}\cos(i\theta_{x-h})\sin(j\theta_{x-h})\\
+&\hspace{21mm}
+ +q_{x-h}k_x\sin(i\theta_{x-h})\cos(j\theta_{x-h})
+ +q_{x-h}k_{x-h}\sin(i\theta_{x-h})\sin(j\theta_{x-h})
+ \Bigr]\\
+&=\sum_{x=1}^{h}\Bigl[
+ q_xk_x\bigl(\cos(i\theta_x)\cos(j\theta_x)
+             +\sin(i\theta_x)\sin(j\theta_x)\bigr)\\
+&\hspace{21mm}
+ +q_xk_{h+x}\bigl(\sin(i\theta_x)\cos(j\theta_x)
+                  -\sin(j\theta_x)\cos(i\theta_x)\bigr)\\
+&\hspace{21mm}
+ -q_{h+x}k_x\bigl(\sin(i\theta_x)\cos(j\theta_x)
+                  -\sin(j\theta_x)\cos(i\theta_x)\bigr)\\
+&\hspace{21mm}
+ +q_{h+x}k_{h+x}\bigl(\cos(i\theta_x)\cos(j\theta_x)
+                      +\sin(i\theta_x)\sin(j\theta_x)\bigr)
+ \Bigr]\\
+&=\sum_{x=1}^{h}\Bigl[
+ q_xk_x\cos((i-j)\theta_x)
+ +q_xk_{h+x}\sin((i-j)\theta_x)\\
+&\hspace{21mm}
+ -q_{h+x}k_x\sin((i-j)\theta_x)
+ +q_{h+x}k_{h+x}\cos((i-j)\theta_x)
+ \Bigr]\\
+&=\sum_{x=1}^{2h}\sum_{y=1}^{2h}q_xk_y m_{xy}.
+\end{align*}
+Let \(\delta=i-j\). Define \(M(\delta)\in\R^{d\times d}\) as follows:
+\[
+M(\delta)=(m_{xy})_{x,y=1}^{2h}=
+\begin{bmatrix}
+\diag\!\bigl(\cos(\delta\theta)\bigr)
+&
+\diag\!\bigl(\sin(\delta\theta)\bigr)\\
+-\diag\!\bigl(\sin(\delta\theta)\bigr)
+&
+\diag\!\bigl(\cos(\delta\theta)\bigr)
+\end{bmatrix}.
+\]
+We obtain
+\[
+f(q_i,i)^\top f(k_j,j)=q_i^\top M(i-j)k_j.
+\]
+Thus, \(M(i-j)\) is independent of \(q_i\) and \(k_j\), and depends on the
+positions only through \(i-j\).
+\endgroup
+
+\clearpage
+\section*{4.}
+
+The main idea of FlashAttention is to compute
+exact attention faster and with less memory by reducing data transfers
+between HBM and SRAM. It uses an IO-aware algorithm that splits \(Q\),
+\(K\), and \(V\) into blocks and processes them in fast on-chip SRAM.
+By incrementally updating the softmax statistics and the output, it
+avoids storing the full attention matrix in HBM and repeatedly reading
+and writing it, while preserving the result of standard attention.
+
+FlashAttention is faster because it reduces memory transfers between
+HBM and SRAM. It processes blocks of \(Q\), \(K\), and \(V\) in fast on-chip SRAM and fuses
+attention operations into a single GPU kernel, avoiding repeated HBM
+reads and writes of large intermediate matrices. Although recomputation
+during the backward pass introduces additional arithmetic operations,
+the reduction in memory traffic can more than compensate for this cost.
+
+FlashAttention uses less memory because it does not store the full
+\(n\times n\) attention matrix in HBM. Instead, it
+incrementally updates the output and maintains per-row softmax
+statistics. During the backward pass, the required attention blocks are
+recomputed from the saved inputs and statistics. This reduces the attention
+memory requirement from \(O(n^2+nd)\) to \(O(nd)\), which is linear in the sequence
+length for fixed \(d\).
+
+\end{document}
